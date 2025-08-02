@@ -4,6 +4,8 @@ import {
   clearGallery,
   showLoader,
   hideLoader,
+  showLoadMore,
+  hideLoadMore,
 } from './js/render-functions';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
@@ -29,18 +31,12 @@ function scrollAfterLoad() {
   });
 }
 
-function hideLoadMoreButton() {
-  loadMore.classList.replace('load-btn', 'hidden');
-}
-function showLoadMoreButton() {
-  loadMore.classList.replace('hidden', 'load-btn');
-}
-
 form.addEventListener('submit', async event => {
   event.preventDefault();
   const submitData = searchInput.value.trim();
   currentQuery = submitData;
   page = 1;
+  hideLoadMore();
 
   if (!submitData) {
     iziToast.error({
@@ -58,21 +54,19 @@ form.addEventListener('submit', async event => {
     totalPages = Math.ceil(data.totalHits / perPage);
 
     if (data.hits.length === 0) {
+      hideLoadMore();
       iziToast.error({
         message:
           'Sorry, there are no images matching your search query. Please try again!',
         position: 'topRight',
       });
-      hideLoadMoreButton();
       return;
     }
 
     createGallery(data.hits);
 
     if (page < totalPages) {
-      showLoadMoreButton();
-    } else {
-      hideLoadMoreButton();
+      showLoadMore();
     }
   } catch (err) {
     iziToast.error({
@@ -88,6 +82,7 @@ form.addEventListener('submit', async event => {
 loadMore.addEventListener('click', async () => {
   page++;
   showLoader();
+  hideLoadMore();
 
   try {
     const data = await getImagesByQuery(currentQuery, page, perPage);
@@ -95,12 +90,14 @@ loadMore.addEventListener('click', async () => {
     scrollAfterLoad();
 
     if (page >= totalPages) {
-      hideLoadMoreButton();
+      hideLoadMore();
       iziToast.info({
         title: 'End',
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
       });
+    } else {
+      showLoadMore();
     }
   } catch (error) {
     iziToast.error({
